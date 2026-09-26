@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBS Shop - Kirana & Supermarket DBMS</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background-color: #eaeded; color: #0f1111; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* HEADER */
+        header { background-color: #131921; color: white; display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; gap: 15px; }
+        .logo { font-size: 24px; font-weight: bold; color: #ff9900; cursor: pointer; white-space: nowrap; }
+        .logo span { color: white; }
+        
+        .search-container { display: flex; flex: 1; max-width: 700px; height: 40px; }
+        .category-select { background: #f3f3f3; border: none; padding: 0 10px; border-radius: 4px 0 0 4px; border-right: 1px solid #cdcdcd; font-size: 13px; }
+        .search-input { flex: 1; padding: 0 12px; border: none; font-size: 15px; outline: none; }
+        .search-btn { background: #febd69; border: none; padding: 0 15px; border-radius: 0 4px 4px 0; cursor: pointer; font-size: 16px; }
+        .search-btn:hover { background: #f3a847; }
+
+        .role-selector { background: #232f3e; color: #ff9900; border: 1px solid #ff9900; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 13px; outline: none; cursor: pointer; }
+        .nav-right { display: flex; align-items: center; gap: 15px; white-space: nowrap; }
+        .nav-link { cursor: pointer; font-size: 13px; color: #ddd; }
+        .nav-link strong { color: white; font-size: 14px; display: block; }
+        .cart-badge { background: #f08804; color: black; font-weight: bold; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+
+        /* LAYOUT CONTAINER */
+        .main-wrapper { display: flex; flex: 1; padding: 15px; gap: 15px; overflow: hidden; }
+        .view-panel { width: 100%; display: none; gap: 15px; height: 100%; }
+        .view-panel.active { display: flex; }
+
+        /* SIDEBAR FILTERS */
+        aside.filters { width: 220px; background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd; overflow-y: auto; }
+        aside.filters h3 { font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .filter-section { margin-bottom: 15px; font-size: 13px; }
+        .filter-section label { display: block; margin: 6px 0; cursor: pointer; }
+
+        /* PRODUCT GRID */
+        section.products-section { flex: 1; background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column; }
+        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+
+        .product-card { border: 1px solid #e7e7e7; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; }
+        .product-card:hover { border-color: #ff9900; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .product-card img { width: 100%; height: 110px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; }
+        .product-title { font-size: 13px; font-weight: 600; line-height: 1.2; height: 32px; overflow: hidden; margin-bottom: 4px; }
+        .product-stock { font-size: 11px; color: #007600; margin-bottom: 4px; font-weight: bold; }
+        .product-price { font-size: 15px; color: #B12704; font-weight: bold; margin-bottom: 8px; }
+        .btn-add-cart { background: #ffd814; border: 1px solid #fcd200; border-radius: 20px; padding: 7px; font-size: 12px; cursor: pointer; font-weight: bold; width: 100%; }
+        .btn-add-cart:hover { background: #f7ca00; }
+
+        /* CART & BILL */
+        aside.cart-summary { width: 320px; background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd; display: flex; flex-direction: column; }
+        .cart-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .cart-items-list { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 13px; }
+        
+        .bill-total-box { background: #f7f7f7; padding: 12px; border-radius: 4px; margin-top: auto; border: 1px solid #e7e7e7; }
+        .bill-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
+        .btn-place-order { background: #ffa41c; border: 1px solid #ff8f00; border-radius: 20px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+
+        /* OWNER & ADMIN DASHBOARDS */
+        .dashboard-container { flex: 1; background: white; padding: 20px; border-radius: 4px; border: 1px solid #ddd; overflow-y: auto; }
+        .db-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        .db-table th, .db-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .db-table th { background-color: #f3f3f3; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .form-row input, .form-row select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .btn-action { background: #11828a; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .auth-box { background: white; padding: 25px; border-radius: 8px; width: 350px; border: 1px solid #ddd; }
+        .auth-box input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #a6a6a6; border-radius: 3px; }
+        .auth-box button { width: 100%; background: #ffd814; border: 1px solid #fcd200; padding: 10px; border-radius: 3px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. HEADER & INTERFACE SELECTOR -->
+    <header>
+        <div class="logo">SBS <span>Shop</span></div>
+        
+        <div class="search-container">
+            <select class="category-select" id="catSelect" onchange="applyFilters()">
+                <option value="All">All Categories</option>
+                <option value="Staples & Grains">Staples & Grains</option>
+                <option value="Dals & Pulses">Dals & Pulses</option>
+                <option value="Dairy & Bakery">Dairy & Bakery</option>
+                <option value="Snacks & Packaged">Snacks & Packaged</option>
+                <option value="Personal Care">Personal Care</option>
+                <option value="Household & Cleaning">Household & Cleaning</option>
+                <option value="Stationery & School">Stationery & School</option>
+            </select>
+            <input type="text" class="search-input" id="searchInput" onkeyup="applyFilters()" placeholder="Search rice, dal, atta, pen, soaps...">
+            <button class="search-btn">🔍</button>
+        </div>
+
+        <div class="nav-right">
+            <select class="role-selector" id="roleSelect" onchange="switchInterface(this.value)">
+                <option value="customer">Interface: Customer</option>
+                <option value="owner">Interface: Shop Owner</option>
+                <option value="admin">Interface: System Admin</option>
+            </select>
+
+            <div class="nav-link" onclick="toggleAuthModal(true)">
+                Hello, <span id="user-display-name">Sign In</span>
+                <strong>Account & Orders</strong>
+            </div>
+            <div class="nav-link">
+                🛒 Cart <span class="cart-badge" id="cart-count">0</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-wrapper">
+
+        <!-- CUSTOMER VIEW -->
+        <div class="view-panel active" id="customer-view">
+            <aside class="filters">
+                <h3>Store Categories</h3>
+                <div class="filter-section">
+                    <label><input type="radio" name="catFilter" value="All" checked onclick="filterByRadio('All')"> All Products</label>
+                    <label><input type="radio" name="catFilter" value="Staples & Grains" onclick="filterByRadio('Staples & Grains')"> Staples & Grains</label>
+                    <label><input type="radio" name="catFilter" value="Dals & Pulses" onclick="filterByRadio('Dals & Pulses')"> Dals & Pulses</label>
+                    <label><input type="radio" name="catFilter" value="Dairy & Bakery" onclick="filterByRadio('Dairy & Bakery')"> Dairy & Bakery</label>
+                    <label><input type="radio" name="catFilter" value="Snacks & Packaged" onclick="filterByRadio('Snacks & Packaged')"> Snacks & Packaged</label>
+                    <label><input type="radio" name="catFilter" value="Personal Care" onclick="filterByRadio('Personal Care')"> Personal Care</label>
+                    <label><input type="radio" name="catFilter" value="Household & Cleaning" onclick="filterByRadio('Household & Cleaning')"> Household & Cleaning</label>
+                    <label><input type="radio" name="catFilter" value="Stationery & School" onclick="filterByRadio('Stationery & School')"> Stationery & School</label>
+                </div>
+            </aside>
+
+            <section class="products-section">
+                <div class="section-title">
+                    <span>Database Inventory Catalog</span>
+                    <span style="font-size: 12px; color: #555;" id="db-count-label">Showing DB records</span>
+                </div>
+                <div class="product-grid" id="productGrid">
+                    <!-- Products rendered strictly from DB array -->
+                </div>
+            </section>
+
+            <aside class="cart-summary">
+                <div class="cart-title">Your Order & Bill</div>
+                <div class="cart-items-list" id="cart-list">
+                    <p style="font-size: 13px; color: #565959; text-align: center; margin-top: 20px;">Cart is currently empty.</p>
+                </div>
+
+                <div class="bill-total-box">
+                    <div class="bill-row"><span>Items Subtotal:</span><span id="bill-subtotal">₹0.00</span></div>
+                    <div class="bill-row"><span>GST / Local Tax (5%):</span><span id="bill-tax">₹0.00</span></div>
+                    <hr style="margin: 8px 0; border: none; border-top: 1px solid #ccc;">
+                    <div class="bill-row" style="font-size: 15px; font-weight: bold; color: #B12704;">
+                        <span>Grand Total:</span><span id="bill-grand-total">₹0.00</span>
+                    </div>
+                    <button class="btn-place-order" onclick="placeOrder()">Place Order & Print Bill</button>
+                </div>
+            </aside>
+        </div>
+
+        <!-- SHOP OWNER VIEW -->
+        <div class="view-panel" id="owner-view">
+            <div class="dashboard-container">
+                <h2>Shop Owner Portal - Inventory Control</h2>
+                <p style="margin-bottom: 15px; font-size: 13px; color: #555;">Add new items into the database table or adjust stock levels.</p>
+
+                <div class="form-row">
+                    <input type="text" id="newTitle" placeholder="Item Name (e.g. Classmate Notebook)" style="flex: 2;">
+                    <select id="newCat" style="flex: 1;">
+                        <option value="Staples & Grains">Staples & Grains</option>
+                        <option value="Dals & Pulses">Dals & Pulses</option>
+                        <option value="Dairy & Bakery">Dairy & Bakery</option>
+                        <option value="Snacks & Packaged">Snacks & Packaged</option>
+                        <option value="Personal Care">Personal Care</option>
+                        <option value="Household & Cleaning">Household & Cleaning</option>
+                        <option value="Stationery & School">Stationery & School</option>
+                    </select>
+                    <input type="number" id="newPrice" placeholder="Price (₹)" style="flex: 1;">
+                    <input type="number" id="newStock" placeholder="Stock Qty" style="flex: 1;">
+                    <button class="btn-action" onclick="addProductToDB()">Insert into DB</button>
+                </div>
+
+                <h3>Live Inventory in Oracle Database</h3>
+                <table class="db-table">
+                    <thead>
+                        <tr>
+                            <th>DB ID</th>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Price (₹)</th>
+                            <th>Stock Quantity</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="owner-db-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SYSTEM ADMIN VIEW -->
+        <div class="view-panel" id="admin-view">
+            <div class="dashboard-container">
+                <h2>System Administrator Dashboard</h2>
+                <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                    <div style="background: #f3f3f3; padding: 15px; border-radius: 4px; flex: 1;">
+                        <h4>Total Registered Products</h4>
+                        <p style="font-size: 24px; font-weight: bold; color: #ff9900;" id="stat-products">0</p>
+                    </div>
+                    <div style="background: #f3f3f3; padding: 15px; border-radius: 4px; flex: 1;">
+                        <h4>Active Orders</h4>
+                        <p style="font-size: 24px; font-weight: bold; color: #11828a;">28</p>
+                    </div>
+                    <div style="background: #f3f3f3; padding: 15px; border-radius: 4px; flex: 1;">
+                        <h4>Total Gross Revenue</h4>
+                        <p style="font-size: 24px; font-weight: bold; color: #B12704;">₹24,850.00</p>
+                    </div>
+                </div>
+
+                <h3>System User Accounts</h3>
+                <table class="db-table">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>USR-101</td><td>Srikanth M</td><td>srikanth@sbsshop.com</td><td>Admin</td><td>Active</td></tr>
+                        <tr><td>USR-102</td><td>Store Manager</td><td>owner@kirana.com</td><td>Shop Owner</td><td>Active</td></tr>
+                        <tr><td>USR-103</td><td>Customer Account</td><td>customer@gmail.com</td><td>Customer</td><td>Active</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- AUTHENTICATION MODAL -->
+    <div class="modal-overlay" id="authModal" style="display: none;">
+        <div class="auth-box">
+            <h2>SBS Shop Sign In</h2>
+            <input type="email" id="loginEmail" placeholder="Email or Mobile Number">
+            <input type="password" placeholder="Password">
+            <button onclick="handleLogin()">Sign In</button>
+            <p style="font-size: 12px; margin-top: 12px; text-align: center; color: #555; cursor: pointer;" onclick="toggleAuthModal(false)">Close Window</p>
+        </div>
+    </div>
+
+    <!-- DATABASE & FRONTEND SCRIPT -->
+    <script>
+        // EXPANDED DATABASE ARRAY (ALL DAILY USE PRODUCTS)
+        let databaseProducts = [
+            // Staples & Grains
+            { id: 101, title: "Aashirvaad Shuddh Chakki Atta 5kg", category: "Staples & Grains", price: 245.00, stock: 40, img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=300&q=80" },
+            { id: 102, title: "Sona Masoori Raw Rice 10kg", category: "Staples & Grains", price: 580.00, stock: 25, img: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=300&q=80" },
+            { id: 103, title: "Fortune Sunlite Sunflower Oil 1L", category: "Staples & Grains", price: 135.00, stock: 30, img: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=300&q=80" },
+            { id: 104, title: "Tata Salt Vacuum Evaporated 1kg", category: "Staples & Grains", price: 28.00, stock: 60, img: "https://images.unsplash.com/photo-1518110168401-f287b99a0a9a?auto=format&fit=crop&w=300&q=80" },
+            { id: 105, title: "Madhur Pure & Hygienic Sugar 1kg", category: "Staples & Grains", price: 48.00, stock: 45, img: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&w=300&q=80" },
+
+            // Dals & Pulses
+            { id: 106, title: "Tata Sampann Toor Dal 1kg", category: "Dals & Pulses", price: 165.00, stock: 35, img: "https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?auto=format&fit=crop&w=300&q=80" },
+            { id: 107, title: "Unpolished Moong Dal Yellow 1kg", category: "Dals & Pulses", price: 140.00, stock: 20, img: "https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&w=300&q=80" },
+            { id: 108, title: "Premium Chana Dal 1kg", category: "Dals & Pulses", price: 95.00, stock: 28, img: "https://images.unsplash.com/photo-1585996824208-a40879612c29?auto=format&fit=crop&w=300&q=80" },
+
+            // Dairy & Bakery
+            { id: 109, title: "Amul Taaza Toned Milk 1L", category: "Dairy & Bakery", price: 72.00, stock: 18, img: "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=300&q=80" },
+            { id: 110, title: "Britannia 100% Whole Wheat Bread", category: "Dairy & Bakery", price: 50.00, stock: 15, img: "https://images.unsplash.com/photo-1586444248902-2f64eddc13df?auto=format&fit=crop&w=300&q=80" },
+            { id: 111, title: "Amul Butter Pasteurised 100g", category: "Dairy & Bakery", price: 58.00, stock: 22, img: "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=300&q=80" },
+
+            // Snacks & Packaged
+            { id: 112, title: "Maggi 2-Minute Noodles Pack of 4", category: "Snacks & Packaged", price: 56.00, stock: 50, img: "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?auto=format&fit=crop&w=300&q=80" },
+            { id: 113, title: "Lays Cream & Onion Chips 50g", category: "Snacks & Packaged", price: 20.00, stock: 40, img: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=300&q=80" },
+
+            // Personal Care
+            { id: 114, title: "Colgate Strong Teeth Toothpaste 200g", category: "Personal Care", price: 115.00, stock: 30, img: "https://images.unsplash.com/photo-1559598467-f8b76c8155d0?auto=format&fit=crop&w=300&q=80" },
+            { id: 115, title: "Dettol Bathing Soap Bar 125g", category: "Personal Care", price: 42.00, stock: 45, img: "https://images.unsplash.com/photo-1607006482182-3d701042784d?auto=format&fit=crop&w=300&q=80" },
+
+            // Household & Cleaning
+            { id: 116, title: "Surf Excel Easy Wash Detergent Powder 1kg", category: "Household & Cleaning", price: 140.00, stock: 25, img: "https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?auto=format&fit=crop&w=300&q=80" },
+            { id: 117, title: "Vim Dishwash Gel Bottle 250ml", category: "Household & Cleaning", price: 60.00, stock: 35, img: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=300&q=80" },
+
+            // Stationery & School
+            { id: 118, title: "Classmate Long Book Rule 160 Pages", category: "Stationery & School", price: 70.00, stock: 30, img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=300&q=80" },
+            { id: 119, title: "Reynolds Ball Point Pen Blue (Pack of 5)", category: "Stationery & School", price: 50.00, stock: 100, img: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=300&q=80" },
+            { id: 120, title: "Apsara Extra Dark Pencils (Box of 10)", category: "Stationery & School", price: 60.00, stock: 80, img: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=300&q=80" }
+        ];
+
+        let cart = [];
+        let currentUser = null;
+
+        function switchInterface(role) {
+            document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+            if (role === 'customer') {
+                document.getElementById('customer-view').classList.add('active');
+            } else if (role === 'owner') {
+                document.getElementById('owner-view').classList.add('active');
+                renderOwnerTable();
+            } else if (role === 'admin') {
+                document.getElementById('admin-view').classList.add('active');
+                document.getElementById('stat-products').innerText = databaseProducts.length;
+            }
+        }
+
+        function renderCustomerProducts(items) {
+            const grid = document.getElementById('productGrid');
+            document.getElementById('db-count-label').innerText = `${items.length} records in Database`;
+
+            if (items.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; color: #777;">No matching records found in database.</p>`;
+                return;
+            }
+
+            grid.innerHTML = items.map(p => `
+                <div class="product-card">
+                    <img src="${p.img}" alt="${p.title}">
+                    <div class="product-title">${p.title}</div>
+                    <div class="product-stock">In Stock: ${p.stock} units</div>
+                    <div class="product-price">₹${p.price.toFixed(2)}</div>
+                    <button class="btn-add-cart" onclick="addToCart(${p.id})">Add to Cart</button>
+                </div>
+            `).join('');
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const cat = document.getElementById('catSelect').value;
+
+            let filtered = databaseProducts.filter(p => {
+                const matchesCat = (cat === "All" || p.category === cat);
+                const matchesSearch = p.title.toLowerCase().includes(query);
+                return matchesCat && matchesSearch;
+            });
+            renderCustomerProducts(filtered);
+        }
+
+        function filterByRadio(category) {
+            document.getElementById('catSelect').value = category;
+            applyFilters();
+        }
+
+        function addToCart(id) {
+            const product = databaseProducts.find(p => p.id === id);
+            const existing = cart.find(item => item.id === id);
+
+            if (existing) {
+                if (existing.qty < product.stock) {
+                    existing.qty += 1;
+                } else {
+                    alert("Stock limit reached!");
+                }
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const cartList = document.getElementById('cart-list');
+            const cartCount = document.getElementById('cart-count');
+
+            if (cart.length === 0) {
+                cartList.innerHTML = `<p style="font-size: 13px; color: #565959; text-align: center; margin-top: 20px;">Cart is currently empty.</p>`;
+                document.getElementById('bill-subtotal').innerText = '₹0.00';
+                document.getElementById('bill-tax').innerText = '₹0.00';
+                document.getElementById('bill-grand-total').innerText = '₹0.00';
+                cartCount.innerText = '0';
+                return;
+            }
+
+            let subtotal = 0;
+            let totalQty = 0;
+
+            cartList.innerHTML = cart.map(item => {
+                const itemTotal = item.price * item.qty;
+                subtotal += itemTotal;
+                totalQty += item.qty;
+                return `
+                    <div class="cart-item">
+                        <div>
+                            <strong>${item.title}</strong><br>
+                            <span style="color:#555">₹${item.price.toFixed(2)} x ${item.qty}</span>
+                        </div>
+                        <strong>₹${itemTotal.toFixed(2)}</strong>
+                    </div>
+                `;
+            }).join('');
+
+            const tax = subtotal * 0.05;
+            const grandTotal = subtotal + tax;
+
+            document.getElementById('bill-subtotal').innerText = `₹${subtotal.toFixed(2)}`;
+            document.getElementById('bill-tax').innerText = `₹${tax.toFixed(2)}`;
+            document.getElementById('bill-grand-total').innerText = `₹${grandTotal.toFixed(2)}`;
+            cartCount.innerText = totalQty;
+        }
+
+        function renderOwnerTable() {
+            const tbody = document.getElementById('owner-db-table');
+            tbody.innerHTML = databaseProducts.map(p => `
+                <tr>
+                    <td>${p.id}</td>
+                    <td>${p.title}</td>
+                    <td>${p.category}</td>
+                    <td>₹${p.price.toFixed(2)}</td>
+                    <td>${p.stock}</td>
+                    <td><button style="color:red; cursor:pointer;" onclick="deleteFromDB(${p.id})">Delete</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function addProductToDB() {
+            const title = document.getElementById('newTitle').value;
+            const category = document.getElementById('newCat').value;
+            const price = parseFloat(document.getElementById('newPrice').value);
+            const stock = parseInt(document.getElementById('newStock').value);
+
+            if (!title || isNaN(price) || isNaN(stock)) {
+                alert("Please fill in valid details.");
+                return;
+            }
+
+            const newProduct = {
+                id: 100 + databaseProducts.length + 1,
+                title,
+                category,
+                price,
+                stock,
+                img: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=300&q=80"
+            };
+
+            databaseProducts.push(newProduct);
+            renderOwnerTable();
+            renderCustomerProducts(databaseProducts);
+            alert("Product inserted into database!");
+            document.getElementById('newTitle').value = '';
+            document.getElementById('newPrice').value = '';
+            document.getElementById('newStock').value = '';
+        }
+
+        function deleteFromDB(id) {
+            databaseProducts = databaseProducts.filter(p => p.id !== id);
+            renderOwnerTable();
+            renderCustomerProducts(databaseProducts);
+        }
+
+        function toggleAuthModal(show) {
+            document.getElementById('authModal').style.display = show ? 'flex' : 'none';
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            if (email) {
+                currentUser = email.split('@')[0];
+                document.getElementById('user-display-name').innerText = currentUser;
+                toggleAuthModal(false);
+            }
+        }
+
+        function placeOrder() {
+            if (cart.length === 0) {
+                alert("Cart is empty!");
+                return;
+            }
+            alert("Order placed successfully! Stock updated in database.");
+            
+            cart.forEach(cartItem => {
+                const dbProduct = databaseProducts.find(p => p.id === cartItem.id);
+                if (dbProduct) {
+                    dbProduct.stock -= cartItem.qty;
+                }
+            });
+
+            cart = [];
+            updateCartUI();
+            renderCustomerProducts(databaseProducts);
+        }
+
+        // Initialize Catalog
+        renderCustomerProducts(databaseProducts);
+    </script>
+</body>
+</html>
